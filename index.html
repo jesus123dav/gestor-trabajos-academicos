@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Gestor de trabajos académicos, entregas, pagos y prioridades." />
+  <title>Gestor de Trabajos Académicos</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Panel administrativo</p>
+      <h1>Gestor de Trabajos Académicos</h1>
+    </div>
+    <div class="topbar-actions">
+      <button id="btnExportar" class="btn btn-secondary">Exportar respaldo</button>
+      <label class="btn btn-secondary file-label">
+        Importar respaldo
+        <input id="inputImportar" type="file" accept=".json" hidden />
+      </label>
+      <button id="btnNuevo" class="btn btn-primary">+ Nuevo trabajo</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="stats-grid" aria-label="Resumen">
+      <article class="stat-card"><span class="stat-icon">📚</span><div><small>Pendientes</small><strong id="statPendientes">0</strong></div></article>
+      <article class="stat-card"><span class="stat-icon">🔄</span><div><small>En proceso</small><strong id="statProceso">0</strong></div></article>
+      <article class="stat-card"><span class="stat-icon">🚨</span><div><small>Urgentes / vencidos</small><strong id="statUrgentes">0</strong></div></article>
+      <article class="stat-card"><span class="stat-icon">💰</span><div><small>Por cobrar</small><strong id="statCobrar">$0</strong></div></article>
+      <article class="stat-card"><span class="stat-icon">💵</span><div><small>Ingresos del mes</small><strong id="statMes">$0</strong></div></article>
+      <article class="stat-card"><span class="stat-icon">✅</span><div><small>Entregados</small><strong id="statEntregados">0</strong></div></article>
+    </section>
+
+    <section id="alertas" class="alerts"></section>
+
+    <section class="layout-grid">
+      <div class="main-column">
+        <section class="panel">
+          <div class="panel-header">
+            <div><p class="eyebrow">Orden recomendado</p><h2>Trabajos</h2></div>
+            <button id="btnLimpiarFiltros" class="btn btn-ghost">Limpiar filtros</button>
+          </div>
+
+          <div class="filters">
+            <input id="buscar" type="search" placeholder="Buscar cliente, materia o actividad..." />
+            <select id="filtroEstado">
+              <option value="">Todos los estados</option>
+              <option>Pendiente</option><option>En proceso</option><option>Esperando información</option><option>Terminado</option><option>Entregado</option><option>Cancelado</option>
+            </select>
+            <select id="filtroPrioridad">
+              <option value="">Todas las prioridades</option>
+              <option value="Vencido">Vencidos</option><option value="Urgente">Urgentes</option><option value="Alta">Alta</option><option value="Media">Media</option><option value="Baja">Baja</option>
+            </select>
+            <select id="ordenar">
+              <option value="prioridad">Orden sugerido</option>
+              <option value="fechaEntrega">Fecha de entrega</option>
+              <option value="fechaLlegada">Orden de llegada</option>
+              <option value="valorDesc">Mayor valor</option>
+              <option value="saldoDesc">Mayor saldo</option>
+            </select>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Prioridad</th><th>Cliente</th><th>Materia / Actividad</th><th>Entrega</th><th>Valor</th><th>Saldo</th><th>Estado</th><th>Acciones</th></tr>
+              </thead>
+              <tbody id="tablaTrabajos"></tbody>
+            </table>
+          </div>
+
+          <div id="estadoVacio" class="empty-state hidden">
+            <div class="empty-icon">🗂️</div><h3>No hay trabajos para mostrar</h3><p>Agrega tu primer trabajo o cambia los filtros.</p>
+          </div>
+        </section>
+      </div>
+
+      <aside class="side-column">
+        <section class="panel">
+          <div class="panel-header compact"><div><p class="eyebrow">Próximas fechas</p><h2>Calendario</h2></div></div>
+          <div id="calendario" class="calendar-list"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-header compact"><div><p class="eyebrow">Control financiero</p><h2>Dinero</h2></div></div>
+          <div class="money-list">
+            <div><span>Valor total registrado</span><strong id="finTotal">$0</strong></div>
+            <div><span>Total recibido</span><strong id="finRecibido">$0</strong></div>
+            <div><span>Pendiente por cobrar</span><strong id="finPendiente">$0</strong></div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <dialog id="modalTrabajo">
+    <form id="formTrabajo" method="dialog">
+      <div class="modal-header">
+        <div><p class="eyebrow">Registro</p><h2 id="modalTitulo">Nuevo trabajo</h2></div>
+        <button type="button" id="btnCerrarModal" class="icon-btn" aria-label="Cerrar">✕</button>
+      </div>
+
+      <input type="hidden" id="trabajoId" />
+
+      <div class="form-grid">
+        <label>Cliente *<input id="cliente" required maxlength="80" placeholder="Ej. María Rodríguez" /></label>
+        <label>WhatsApp<input id="whatsapp" inputmode="tel" maxlength="20" placeholder="Ej. 3127223859" /></label>
+        <label>Universidad<input id="universidad" maxlength="80" value="UNAD" /></label>
+        <label>Materia / curso *<input id="materia" required maxlength="100" placeholder="Ej. Cálculo diferencial" /></label>
+        <label class="full">Actividad / trabajo *<input id="actividad" required maxlength="140" placeholder="Ej. Tarea 2 - Derivadas" /></label>
+        <label>Tipo de trabajo<select id="tipo"><option>Tarea</option><option>Cuestionario</option><option>Foro</option><option>Ensayo</option><option>Mapa conceptual</option><option>Presentación</option><option>Informe</option><option>Video</option><option>Otro</option></select></label>
+        <label>Fecha de llegada *<input id="fechaLlegada" type="date" required /></label>
+        <label>Fecha de entrega *<input id="fechaEntrega" type="date" required /></label>
+        <label>Hora límite<input id="horaEntrega" type="time" value="23:59" /></label>
+        <label>Valor del trabajo *<input id="valor" type="number" min="0" step="1000" required placeholder="25000" /></label>
+        <label>Abono recibido<input id="abono" type="number" min="0" step="1000" value="0" /></label>
+        <label>Estado<select id="estado"><option>Pendiente</option><option>En proceso</option><option>Esperando información</option><option>Terminado</option><option>Entregado</option><option>Cancelado</option></select></label>
+        <label>Prioridad manual<select id="prioridadManual"><option value="">Automática</option><option>Urgente</option><option>Alta</option><option>Media</option><option>Baja</option></select></label>
+        <label class="full">Observaciones<textarea id="notas" rows="4" maxlength="800" placeholder="Indicaciones, archivos pendientes, detalles del cliente..."></textarea></label>
+      </div>
+
+      <div class="form-footer"><button type="button" id="btnCancelar" class="btn btn-secondary">Cancelar</button><button type="submit" class="btn btn-primary">Guardar trabajo</button></div>
+    </form>
+  </dialog>
+
+  <template id="templateFila">
+    <tr>
+      <td data-label="Prioridad"><span class="priority-badge"></span></td>
+      <td data-label="Cliente"><strong class="cliente"></strong><small class="universidad"></small></td>
+      <td data-label="Materia / Actividad"><strong class="materia"></strong><small class="actividad"></small></td>
+      <td data-label="Entrega"><strong class="entrega"></strong><small class="restante"></small></td>
+      <td data-label="Valor" class="valor"></td>
+      <td data-label="Saldo" class="saldo"></td>
+      <td data-label="Estado"><span class="status-badge"></span></td>
+      <td data-label="Acciones"><div class="row-actions"><button class="action-btn whatsapp-btn" title="Abrir WhatsApp">WA</button><button class="action-btn edit-btn" title="Editar">✎</button><button class="action-btn done-btn" title="Marcar entregado">✓</button><button class="action-btn delete-btn danger" title="Eliminar">🗑</button></div></td>
+    </tr>
+  </template>
+
+  <script src="script.js"></script>
+</body>
+</html>
